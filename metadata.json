@@ -1,0 +1,6 @@
+{
+  "name": "Chiếc Gậy Trường Sơn - Game Hành Quân Ngữ Văn",
+  "description": "Trò chơi học tập tương tác Ngữ văn chủ đề Hành quân - Chiếc gậy Trường Sơn với âm thanh Web Audio API, hiệu ứng pháo hoa, đếm ngược tùy chỉnh và xuất chứng nhận.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
