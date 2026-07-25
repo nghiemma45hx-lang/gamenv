@@ -1,29 +1,87 @@
-import React, { useState, useRef } from 'react';
-import { Plus, Trash2, Save, RotateCcw, Download, Check, BookOpen, Shuffle, Sparkles, FileText } from 'lucide-react';
-import { QuizItem } from '../types';
-import { QUIZ_DATA } from '../quizData';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Trash2, Save, RotateCcw, Download, Check, BookOpen, Shuffle, Sparkles, FileText, Users, LogOut, FileQuestion, FolderKanban } from 'lucide-react';
+import { QuizItem, SubjectTopic } from '../types';
 import { soundEngine } from '../audio';
 import { generateSingleHtmlCode } from '../utils/exportHtml';
 import { shuffleQuizOptions } from '../utils/shuffle';
 import { exportQuestionsToWord } from '../utils/exportWord';
+import {
+  saveQuizList,
+  loadSubjectsList,
+  saveSubjectsList,
+  loadActiveSubjectId,
+  saveActiveSubjectId,
+  resetSubjectsToDefault,
+  getActiveSubject,
+} from '../utils/storage';
+import { ResultsManager } from './ResultsManager';
+import { SubjectManagerTab } from './SubjectManagerTab';
 
 interface TeacherEditorProps {
   quizList: QuizItem[];
   setQuizList: React.Dispatch<React.SetStateAction<QuizItem[]>>;
   onClose: () => void;
+  onLogoutAdmin?: () => void;
+  onSubjectChanged?: () => void;
 }
 
 export const TeacherEditor: React.FC<TeacherEditorProps> = ({
   quizList,
   setQuizList,
   onClose,
+  onLogoutAdmin,
+  onSubjectChanged,
 }) => {
+  const [activeTab, setActiveTab] = useState<'subjects' | 'questions' | 'results'>('questions');
+  
+  // Subjects list & Active subject state
+  const [subjectsList, setSubjectsList] = useState<SubjectTopic[]>(() => loadSubjectsList());
+  const [activeSubjectId, setActiveSubjectId] = useState<string>(() => loadActiveSubjectId());
+
+  // Current active subject questions
+  const currentSubject = subjectsList.find((s) => s.id === activeSubjectId) || subjectsList[0];
   const [editingList, setEditingList] = useState<QuizItem[]>([...quizList]);
+  
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [newlyAddedId, setNewlyAddedId] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const lastTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Synchronize when active subject changes
+  useEffect(() => {
+    const activeSub = subjectsList.find((s) => s.id === activeSubjectId) || subjectsList[0];
+    if (activeSub && activeSub.questions) {
+      setEditingList([...activeSub.questions]);
+      setQuizList([...activeSub.questions]);
+    }
+  }, [activeSubjectId, subjectsList, setQuizList]);
+
+  const handleSelectActiveSubject = (id: string) => {
+    setActiveSubjectId(id);
+    saveActiveSubjectId(id);
+    if (onSubjectChanged) onSubjectChanged();
+  };
+
+  const handleUpdateSubjects = (newList: SubjectTopic[]) => {
+    setSubjectsList(newList);
+    saveSubjectsList(newList);
+    if (onSubjectChanged) onSubjectChanged();
+  };
+
+  const handleResetSubjects = () => {
+    soundEngine.playClick();
+    if (confirm("Khôi phục danh sách môn học & chủ đề về các bộ mặc định ban đầu?")) {
+      const defaultList = resetSubjectsToDefault();
+      setSubjectsList(defaultList);
+      setActiveSubjectId(defaultList[0].id);
+      saveSubjectsList(defaultList);
+      saveActiveSubjectId(defaultList[0].id);
+      if (onSubjectChanged) onSubjectChanged();
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+    }
+  };
 
   const handleOptionChange = (qIndex: number, optIndex: number, val: string) => {
     setEditingList((prev) => {
@@ -58,13 +116,12 @@ export const TeacherEditor: React.FC<TeacherEditorProps> = ({
       ],
       correct: 0,
       explanation: "Nhập lời giải thích bài học chi tiết tại đây...",
-      category: "Củng cố kiến thức"
+      category: currentSubject ? currentSubject.subjectCategory : "Củng cố kiến thức"
     };
 
     setEditingList((prev) => [...prev, newQ]);
     setNewlyAddedId(newId);
 
-    // Smooth scroll down to the bottom and focus on the new question textarea
     setTimeout(() => {
       if (containerRef.current) {
         containerRef.current.scrollTo({
@@ -78,7 +135,6 @@ export const TeacherEditor: React.FC<TeacherEditorProps> = ({
       }
     }, 100);
 
-    // Clear highlight after 3.5 seconds
     setTimeout(() => {
       setNewlyAddedId(null);
     }, 3500);
@@ -93,13 +149,6 @@ export const TeacherEditor: React.FC<TeacherEditorProps> = ({
     setEditingList((prev) => prev.filter((_, idx) => idx !== qIndex));
   };
 
-  const handleResetDefault = () => {
-    soundEngine.playClick();
-    if (confirm("Khôi phục lại 10 câu hỏi mặc định về bài học 'Chiếc gậy Trường Sơn'?")) {
-      setEditingList([...QUIZ_DATA]);
-    }
-  };
-
   const handleShuffleAllOptions = () => {
     soundEngine.playClick();
     setEditingList(shuffleQuizOptions(editingList));
@@ -108,6 +157,19 @@ export const TeacherEditor: React.FC<TeacherEditorProps> = ({
   const handleSaveList = () => {
     soundEngine.playCorrect();
     setQuizList(editingList);
+    saveQuizList(editingList, activeSubjectId);
+    
+    // Also update in subjectsList
+    const updatedSubjects = subjectsList.map((s) => {
+      if (s.id === activeSubjectId) {
+        return { ...s, questions: editingList };
+      }
+      return s;
+    });
+    setSubjectsList(updatedSubjects);
+    saveSubjectsList(updatedSubjects);
+
+    if (onSubjectChanged) onSubjectChanged();
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
   };
@@ -119,7 +181,7 @@ export const TeacherEditor: React.FC<TeacherEditorProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ChiecGayTruongSon_GiaoVienEdit.html`;
+    a.download = `DeThi_${currentSubject ? currentSubject.name.replace(/\s+/g, '') : 'CauHoi'}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -137,182 +199,263 @@ export const TeacherEditor: React.FC<TeacherEditorProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-stone-800">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 text-xs font-bold mb-1">
-            <BookOpen className="w-3.5 h-3.5" /> DÀNH CHO GIÁO VIÊN & QUẢN TRỊ ({editingList.length} câu)
+            <BookOpen className="w-3.5 h-3.5" /> HỆ THỐNG QUẢN TRỊ ADMIN
           </div>
-          <h2 className="text-2xl font-black text-amber-300">
-            Quản Lý & Chỉnh Sửa Câu Hỏi Bộ Môn
+          <h2 className="text-2xl font-black text-amber-300 flex items-center gap-2">
+            Quản Lý Chủ Đề, Câu Hỏi & Kết Quả
           </h2>
           <p className="text-xs text-stone-400">
-            Dễ dàng thêm, sửa, xóa hoặc thay thế câu hỏi. Thay đổi có hiệu lực ngay trong trò chơi!
+            Môn học đang chọn: <strong className="text-amber-300 font-bold">{currentSubject?.iconEmoji} {currentSubject?.subjectCategory}: {currentSubject?.name}</strong>
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleShuffleAllOptions}
-            className="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-200 text-xs font-bold border border-amber-500/40 flex items-center gap-1 transition-all cursor-pointer"
-            title="Đảo vị trí đáp án của tất cả các câu hỏi ngay trong trình sửa"
-          >
-            <Shuffle className="w-3.5 h-3.5 text-amber-400" /> Trộn Đáp Án
-          </button>
-
-          <button
-            onClick={handleResetDefault}
-            className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-bold border border-stone-700 flex items-center gap-1 transition-all cursor-pointer"
-            title="Khôi phục câu hỏi ban đầu"
-          >
-            <RotateCcw className="w-3.5 h-3.5" /> Mặc định
-          </button>
-
-          <button
-            onClick={handleExportSingleHtml}
-            className="px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs font-bold border border-emerald-600 flex items-center gap-1 transition-all cursor-pointer"
-            title="Xuất file HTML đơn chứa các câu hỏi mới"
-          >
-            <Download className="w-3.5 h-3.5" /> Xuất File HTML
-          </button>
-
-          <button
-            onClick={handleExportWord}
-            className="px-3 py-2 rounded-xl bg-blue-800 hover:bg-blue-700 text-blue-100 text-xs font-bold border border-blue-600 flex items-center gap-1 transition-all cursor-pointer"
-            title="Xuất đề thi và đáp án ra file Microsoft Word (.doc)"
-          >
-            <FileText className="w-3.5 h-3.5 text-blue-300" /> Xuất File Word
-          </button>
+        {/* Admin Logout / Exit Button */}
+        <div className="flex items-center gap-2">
+          {onLogoutAdmin && (
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                onLogoutAdmin();
+              }}
+              className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-rose-950/80 text-stone-300 hover:text-rose-200 text-xs font-bold border border-stone-700 hover:border-rose-500/50 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Đăng xuất khỏi quyền Admin"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Đăng Xuất Admin</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Save Status Banner */}
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-black/40 p-1.5 rounded-2xl border border-stone-800">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              setActiveTab('questions');
+            }}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'questions'
+                ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/20'
+                : 'text-stone-300 hover:text-white hover:bg-stone-800'
+            }`}
+          >
+            <FileQuestion className="w-4 h-4" />
+            <span>Sửa Câu Hỏi ({editingList.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              setActiveTab('subjects');
+            }}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'subjects'
+                ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/20'
+                : 'text-stone-300 hover:text-white hover:bg-stone-800'
+            }`}
+          >
+            <FolderKanban className="w-4 h-4" />
+            <span>Chủ Đề & Môn Học ({subjectsList.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              setActiveTab('results');
+            }}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'results'
+                ? 'bg-amber-400 text-stone-950 shadow-md shadow-amber-500/20'
+                : 'text-stone-300 hover:text-white hover:bg-stone-800'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Kết Quả Học Tập</span>
+          </button>
+        </div>
+
+        {/* Question-specific top quick tools */}
+        {activeTab === 'questions' && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleShuffleAllOptions}
+              className="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-200 text-xs font-bold border border-amber-500/40 flex items-center gap-1 transition-all cursor-pointer"
+              title="Đảo vị trí đáp án của tất cả các câu hỏi"
+            >
+              <Shuffle className="w-3.5 h-3.5 text-amber-400" /> Trộn Đáp Án
+            </button>
+
+            <button
+              onClick={handleExportSingleHtml}
+              className="px-3 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs font-bold border border-emerald-600 flex items-center gap-1 transition-all cursor-pointer"
+              title="Xuất file HTML đơn chứa các câu hỏi mới"
+            >
+              <Download className="w-3.5 h-3.5" /> Xuất File HTML
+            </button>
+
+            <button
+              onClick={handleExportWord}
+              className="px-3 py-2 rounded-xl bg-blue-800 hover:bg-blue-700 text-blue-100 text-xs font-bold border border-blue-600 flex items-center gap-1 transition-all cursor-pointer"
+              title="Xuất đề thi và đáp án ra file Microsoft Word (.doc)"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-300" /> Xuất File Word
+            </button>
+          </div>
+        )}
+      </div>
+
       {savedSuccess && (
         <div className="p-4 rounded-xl bg-emerald-950 border border-emerald-500/50 text-emerald-200 text-sm font-bold flex items-center gap-2 animate-bounce">
           <Check className="w-5 h-5 text-emerald-400" />
-          Đã lưu thay đổi bộ câu hỏi thành công! Trò chơi đã cập nhật {editingList.length} câu hỏi mới.
+          Đã lưu thay đổi thành công! Dữ liệu đã được cập nhật.
         </div>
       )}
 
-      {/* Questions List */}
-      <div ref={containerRef} className="space-y-6 max-h-[58vh] overflow-y-auto pr-2 scroll-smooth">
-        {editingList.map((q, qIdx) => {
-          const isNewlyAdded = q.id === newlyAddedId;
-          const isLast = qIdx === editingList.length - 1;
+      {/* TAB 1: SUBJECTS & TOPICS MANAGER */}
+      {activeTab === 'subjects' && (
+        <SubjectManagerTab
+          subjects={subjectsList}
+          activeSubjectId={activeSubjectId}
+          onSelectActiveSubject={handleSelectActiveSubject}
+          onUpdateSubjects={handleUpdateSubjects}
+          onResetToDefault={handleResetSubjects}
+        />
+      )}
 
-          return (
-            <div
-              key={q.id || qIdx}
-              className={`p-5 rounded-2xl bg-black/40 border transition-all space-y-4 ${
-                isNewlyAdded
-                  ? 'border-amber-400 ring-2 ring-amber-400/60 bg-amber-950/30 shadow-lg shadow-amber-500/10'
-                  : 'border-stone-800'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-amber-300 text-sm sm:text-base">
-                    Câu Hỏi #{qIdx + 1}
-                  </span>
-                  {isNewlyAdded && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold flex items-center gap-1 animate-pulse">
-                      <Sparkles className="w-3 h-3 text-amber-400" /> Mới Thêm
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleDeleteQuestion(qIdx)}
-                  className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs border border-rose-500/30 flex items-center gap-1 transition-all cursor-pointer"
+      {/* TAB 2: QUESTION BANK EDITOR */}
+      {activeTab === 'questions' && (
+        <>
+          <div ref={containerRef} className="space-y-6 max-h-[58vh] overflow-y-auto pr-2 scroll-smooth">
+            {editingList.map((q, qIdx) => {
+              const isNewlyAdded = q.id === newlyAddedId;
+              const isLast = qIdx === editingList.length - 1;
+
+              return (
+                <div
+                  key={q.id || qIdx}
+                  className={`p-5 rounded-2xl bg-black/40 border transition-all space-y-4 ${
+                    isNewlyAdded
+                      ? 'border-amber-400 ring-2 ring-amber-400/60 bg-amber-950/30 shadow-lg shadow-amber-500/10'
+                      : 'border-stone-800'
+                  }`}
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Xóa
-                </button>
-              </div>
-
-              {/* Question Text */}
-              <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase mb-1">
-                  Nội dung câu hỏi:
-                </label>
-                <textarea
-                  ref={isLast ? lastTextareaRef : undefined}
-                  value={q.question}
-                  onChange={(e) => handleFieldChange(qIdx, 'question', e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 bg-stone-900 border border-stone-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl text-stone-100 text-sm outline-none font-medium transition-all"
-                  placeholder="Nhập nội dung câu hỏi..."
-                />
-              </div>
-
-              {/* Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {q.options.map((opt, oIdx) => (
-                  <div key={oIdx} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-bold text-stone-400">
-                      <span>Lựa chọn {String.fromCharCode(65 + oIdx)}:</span>
-                      <label className="flex items-center gap-1 cursor-pointer text-amber-300">
-                        <input
-                          type="radio"
-                          name={`correct-${q.id || qIdx}`}
-                          checked={q.correct === oIdx}
-                          onChange={() => handleFieldChange(qIdx, 'correct', oIdx)}
-                          className="accent-amber-400 cursor-pointer"
-                        />
-                        Là đáp án đúng
-                      </label>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-amber-300 text-sm sm:text-base">
+                        Câu Hỏi #{qIdx + 1}
+                      </span>
+                      {isNewlyAdded && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-400/50 text-[10px] font-bold flex items-center gap-1 animate-pulse">
+                          <Sparkles className="w-3 h-3 text-amber-400" /> Mới Thêm
+                        </span>
+                      )}
                     </div>
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => handleOptionChange(qIdx, oIdx, e.target.value)}
-                      className={`w-full px-3 py-2 bg-stone-900 border rounded-xl text-xs font-medium outline-none transition-all ${
-                        q.correct === oIdx ? 'border-amber-400 bg-amber-950/20 text-amber-200' : 'border-stone-700 text-stone-300'
-                      }`}
-                      placeholder={`Lựa chọn ${String.fromCharCode(65 + oIdx)}...`}
+                    <button
+                      onClick={() => handleDeleteQuestion(qIdx)}
+                      className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs border border-rose-500/30 flex items-center gap-1 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Xóa
+                    </button>
+                  </div>
+
+                  {/* Question Text */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-400 uppercase mb-1">
+                      Nội dung câu hỏi:
+                    </label>
+                    <textarea
+                      ref={isLast ? lastTextareaRef : undefined}
+                      value={q.question}
+                      onChange={(e) => handleFieldChange(qIdx, 'question', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-stone-900 border border-stone-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl text-stone-100 text-sm outline-none font-medium transition-all"
+                      placeholder="Nhập nội dung câu hỏi..."
                     />
                   </div>
-                ))}
-              </div>
 
-              {/* Explanation */}
-              <div>
-                <label className="block text-xs font-bold text-amber-300 uppercase mb-1">
-                  Lời giải thích bài học chi tiết:
-                </label>
-                <textarea
-                  value={q.explanation}
-                  onChange={(e) => handleFieldChange(qIdx, 'explanation', e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 bg-stone-900 border border-stone-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl text-stone-200 text-xs outline-none font-medium transition-all"
-                  placeholder="Lời giải thích sau khi học sinh trả lời..."
-                />
-              </div>
+                  {/* Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {q.options.map((opt, oIdx) => (
+                      <div key={oIdx} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-stone-400">
+                          <span>Lựa chọn {String.fromCharCode(65 + oIdx)}:</span>
+                          <label className="flex items-center gap-1 cursor-pointer text-amber-300">
+                            <input
+                              type="radio"
+                              name={`correct-${q.id || qIdx}`}
+                              checked={q.correct === oIdx}
+                              onChange={() => handleFieldChange(qIdx, 'correct', oIdx)}
+                              className="accent-amber-400 cursor-pointer"
+                            />
+                            Là đáp án đúng
+                          </label>
+                        </div>
+                        <input
+                          type="text"
+                          value={opt}
+                          onChange={(e) => handleOptionChange(qIdx, oIdx, e.target.value)}
+                          className={`w-full px-3 py-2 bg-stone-900 border rounded-xl text-xs font-medium outline-none transition-all ${
+                            q.correct === oIdx ? 'border-amber-400 bg-amber-950/20 text-amber-200' : 'border-stone-700 text-stone-300'
+                          }`}
+                          placeholder={`Lựa chọn ${String.fromCharCode(65 + oIdx)}...`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Explanation */}
+                  <div>
+                    <label className="block text-xs font-bold text-amber-300 uppercase mb-1">
+                      Lời giải thích bài học chi tiết:
+                    </label>
+                    <textarea
+                      value={q.explanation}
+                      onChange={(e) => handleFieldChange(qIdx, 'explanation', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-stone-900 border border-stone-700 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-xl text-stone-200 text-xs outline-none font-medium transition-all"
+                      placeholder="Lời giải thích sau khi học sinh trả lời..."
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Question Editor Footer Controls */}
+          <div className="flex items-center justify-between gap-2 pt-4 border-t border-stone-800">
+            <button
+              onClick={handleAddQuestion}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-stone-800 to-stone-700 hover:from-amber-900/60 hover:to-amber-800/60 text-amber-300 font-bold text-sm border border-amber-500/40 hover:border-amber-400 flex items-center gap-2 transition-all shadow-md cursor-pointer active:scale-95"
+            >
+              <Plus className="w-4 h-4 text-amber-400" /> + Thêm Câu Hỏi Mới
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-sm transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+
+              <button
+                onClick={handleSaveList}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-stone-950 font-black text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer transition-all active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                Lưu Bộ Câu Hỏi
+              </button>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </>
+      )}
 
-      {/* Footer Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-stone-800">
-        <button
-          onClick={handleAddQuestion}
-          className="px-5 py-3 rounded-xl bg-gradient-to-r from-stone-800 to-stone-700 hover:from-amber-900/60 hover:to-amber-800/60 text-amber-300 font-bold text-sm border border-amber-500/40 hover:border-amber-400 flex items-center gap-2 transition-all shadow-md cursor-pointer active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-amber-400" /> + Thêm Câu Hỏi Mới
-        </button>
-
-        <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-sm transition-all cursor-pointer"
-          >
-            Đóng
-          </button>
-          <button
-            onClick={handleSaveList}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-stone-950 font-black text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer transition-all active:scale-95"
-          >
-            <Save className="w-4 h-4" />
-            Lưu Bộ Câu Hỏi
-          </button>
-        </div>
-      </div>
+      {/* TAB 3: STUDENT RESULTS */}
+      {activeTab === 'results' && (
+        <ResultsManager />
+      )}
     </div>
   );
 };
-

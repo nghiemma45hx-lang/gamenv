@@ -11,6 +11,17 @@ export interface QuizItem {
   category?: string;
 }
 
+export interface SubjectTopic {
+  id: string;
+  name: string; // e.g. "Chiếc Gậy Trường Sơn" or "Lịch Sử Việt Nam"
+  subjectCategory: string; // e.g. "Ngữ Văn", "Lịch Sử", "Địa Lý", "Tiếng Anh", "Toán Học"
+  iconEmoji: string; // e.g. "🪖", "📜", "🗺️", "🇬🇧", "🧮"
+  description: string;
+  badgeText: string; // e.g. "Lớp 11", "THPT", "Ôn Thi"
+  isCustom?: boolean;
+  questions: QuizItem[];
+}
+
 export type TimerSetting = 5 | 10 | 15 | 20 | 30 | 0; // 0 = unlimited
 
 export interface PlayerInfo {
@@ -35,6 +46,9 @@ export interface UserAnswer {
 export interface GameSummary {
   playerName: string;
   classGroup: string;
+  subjectId?: string;
+  subjectName?: string;
+  subjectCategory?: string;
   score: number;
   maxScore: number;
   correctCount: number;
@@ -48,3 +62,4 @@ export interface GameSummary {
 }
 
 export type ScreenState = 'start' | 'playing' | 'ended' | 'review' | 'editor';
+

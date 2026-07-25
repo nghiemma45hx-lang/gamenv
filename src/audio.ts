@@ -157,6 +157,10 @@ class SoundEngine {
     }
   }
 
+  public playWrong() {
+    this.playIncorrect();
+  }
+
   // Victory Fanfare & Grand Harmony Chord Sequence
   public playFanfare() {
     const ctx = this.getContext();

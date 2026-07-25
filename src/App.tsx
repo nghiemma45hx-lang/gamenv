@@ -1,35 +1,112 @@
-import React, { useState } from 'react';
-import { QuizItem, PlayerInfo, ScreenState, UserAnswer, GameSummary } from './types';
-import { QUIZ_DATA, RANK_TITLES } from './quizData';
+import React, { useState, useEffect } from 'react';
+import { QuizItem, PlayerInfo, ScreenState, UserAnswer, GameSummary, SubjectTopic } from './types';
+import { RANK_TITLES } from './quizData';
 import { Header } from './components/Header';
 import { StartScreen } from './components/StartScreen';
 import { PlayScreen } from './components/PlayScreen';
 import { EndScreen } from './components/EndScreen';
 import { TeacherEditor } from './components/TeacherEditor';
+import { AdminAuthModal } from './components/AdminAuthModal';
+import { SubjectSelectorModal } from './components/SubjectSelectorModal';
 import { shuffleQuizOptions } from './utils/shuffle';
+import {
+  loadSubjectsList,
+  loadActiveSubjectId,
+  saveActiveSubjectId,
+  getActiveSubject,
+  loadPlayerInfo,
+  savePlayerInfo,
+  saveGameResult,
+} from './utils/storage';
 
 export default function App() {
-  const [quizList, setQuizList] = useState<QuizItem[]>(QUIZ_DATA);
-  const [activeQuizList, setActiveQuizList] = useState<QuizItem[]>(QUIZ_DATA);
+  const [subjectsList, setSubjectsList] = useState<SubjectTopic[]>(() => loadSubjectsList());
+  const [activeSubjectId, setActiveSubjectId] = useState<string>(() => loadActiveSubjectId());
+  
+  const activeSubject = subjectsList.find((s) => s.id === activeSubjectId) || subjectsList[0];
+
+  const [quizList, setQuizList] = useState<QuizItem[]>(() => activeSubject?.questions || []);
+  const [activeQuizList, setActiveQuizList] = useState<QuizItem[]>(quizList);
   const [screenState, setScreenState] = useState<ScreenState>('start');
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
-  const [playerInfo, setPlayerInfo] = useState<PlayerInfo>({
-    name: '',
-    classGroup: 'Lớp 11',
-    avatarEmoji: '🪖',
-    timerSetting: 20,
-    shuffleOptions: true,
+  // Subject Modal State
+  const [isSubjectModalOpen, setIsSubjectModalOpen] = useState<boolean>(false);
+
+  // Admin Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
+
+  // Player Info with LocalStorage persistence
+  const [playerInfo, setPlayerInfo] = useState<PlayerInfo>(() => {
+    const saved = loadPlayerInfo();
+    return saved || {
+      name: '',
+      classGroup: 'Lớp 11',
+      avatarEmoji: '🪖',
+      timerSetting: 20,
+      shuffleOptions: true,
+    };
   });
 
   const [gameSummary, setGameSummary] = useState<GameSummary | null>(null);
   const [activeScore, setActiveScore] = useState<number>(0);
   const [activeCombo, setActiveCombo] = useState<number>(0);
 
+  // Synchronize playerInfo changes to localStorage
+  useEffect(() => {
+    savePlayerInfo(playerInfo);
+  }, [playerInfo]);
+
+  // Synchronize active subject questions when subject changes
+  const refreshActiveSubjectData = () => {
+    const updatedSubjects = loadSubjectsList();
+    const currentActiveId = loadActiveSubjectId();
+    const foundSub = updatedSubjects.find((s) => s.id === currentActiveId) || updatedSubjects[0];
+
+    setSubjectsList(updatedSubjects);
+    setActiveSubjectId(foundSub.id);
+    if (foundSub && foundSub.questions) {
+      setQuizList(foundSub.questions);
+    }
+  };
+
+  const handleSelectSubject = (subjectId: string) => {
+    setActiveSubjectId(subjectId);
+    saveActiveSubjectId(subjectId);
+    
+    const foundSub = subjectsList.find((s) => s.id === subjectId);
+    if (foundSub && foundSub.questions) {
+      setQuizList(foundSub.questions);
+    }
+  };
+
+  const handleRequestAdminMode = () => {
+    if (isAdminAuthenticated) {
+      setScreenState('editor');
+    } else {
+      setIsAdminModalOpen(true);
+    }
+  };
+
+  const handleAdminAuthSuccess = () => {
+    setIsAdminAuthenticated(true);
+    setIsAdminModalOpen(false);
+    setScreenState('editor');
+  };
+
+  const handleLogoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    setScreenState('start');
+  };
+
   const handleStartGame = () => {
     setActiveScore(0);
     setActiveCombo(0);
     
+    // Save student info
+    savePlayerInfo(playerInfo);
+
     // Prepare question list (shuffle options if enabled)
     if (playerInfo.shuffleOptions !== false) {
       setActiveQuizList(shuffleQuizOptions(quizList));
@@ -58,11 +135,16 @@ export default function App() {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
 
     const summaryObj: GameSummary = {
-      playerName: playerInfo.name || 'Chiến sĩ Trường Sơn',
-      classGroup: playerInfo.classGroup || 'Trường Sơn',
+      playerName: playerInfo.name || 'Học viên Trường Sơn',
+      classGroup: playerInfo.classGroup || 'Lớp Học',
+      subjectId: activeSubject?.id,
+      subjectName: activeSubject?.name || 'Chiếc Gậy Trường Sơn',
+      subjectCategory: activeSubject?.subjectCategory || 'Ngữ Văn',
       score: finalScore,
       maxScore: activeQuizList.length * 10 + (maxCombo > 1 ? maxCombo * 5 : 0),
       correctCount,
@@ -74,6 +156,9 @@ export default function App() {
       date: todayStr,
       answers,
     };
+
+    // Save game summary result persistently to localStorage
+    saveGameResult(summaryObj);
 
     setGameSummary(summaryObj);
     setScreenState('ended');
@@ -99,6 +184,10 @@ export default function App() {
           score={activeScore}
           combo={activeCombo}
           onRestart={handleRestart}
+          onRequestAdminMode={handleRequestAdminMode}
+          isAdminAuthenticated={isAdminAuthenticated}
+          activeSubject={activeSubject}
+          onOpenSubjectModal={() => setIsSubjectModalOpen(true)}
         />
 
         {/* Main View Area */}
@@ -109,6 +198,8 @@ export default function App() {
               setPlayerInfo={setPlayerInfo}
               onStartGame={handleStartGame}
               totalQuestions={quizList.length}
+              activeSubject={activeSubject}
+              onOpenSubjectModal={() => setIsSubjectModalOpen(true)}
             />
           )}
 
@@ -133,14 +224,33 @@ export default function App() {
               quizList={quizList}
               setQuizList={setQuizList}
               onClose={() => setScreenState('start')}
+              onLogoutAdmin={handleLogoutAdmin}
+              onSubjectChanged={refreshActiveSubjectData}
             />
           )}
         </main>
 
+        {/* Subject / Topic Selector Modal */}
+        <SubjectSelectorModal
+          isOpen={isSubjectModalOpen}
+          subjects={subjectsList}
+          activeSubjectId={activeSubjectId}
+          onSelectSubject={handleSelectSubject}
+          onClose={() => setIsSubjectModalOpen(false)}
+          onOpenTeacherEditor={handleRequestAdminMode}
+        />
+
+        {/* Admin Password Verification Modal */}
+        <AdminAuthModal
+          isOpen={isAdminModalOpen}
+          onClose={() => setIsAdminModalOpen(false)}
+          onSuccess={handleAdminAuthSuccess}
+        />
+
         {/* Footer */}
         <footer className="mt-8 text-center text-xs text-stone-500 font-medium py-3 border-t border-stone-800/60">
           <p>
-            Trò chơi Giáo dục Ngữ văn: <strong className="text-amber-400/80">Chiếc Gậy Trường Sơn</strong> • Thiết kế phục vụ giảng dạy & học tập tương tác
+            Trò chơi Giáo dục Đa Môn Học: <strong className="text-amber-400/80">Chiếc Gậy Trường Sơn</strong> • Hệ thống Quản lý Chủ đề & Kết quả Học tập
           </p>
         </footer>
       </div>

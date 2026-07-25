@@ -1,9 +1,7 @@
-import { QuizItem } from './types';
+import { QuizItem, SubjectTopic } from './types';
 
 /**
- * MẢNG DỮ LIỆU CÂU HỎI TRẮC NGHIỆM - CHIẾC GẬY TRƯỜNG SƠN
- * Giáo viên và người dùng có thể chỉnh sửa trực tiếp mảng này
- * hoặc sử dụng giao diện Quản lý câu hỏi (Teacher Editor) trong ứng dụng.
+ * MẢNG CÂU HỎI MẶC ĐỊNH CHO MÔN NGỮ VĂN
  */
 export const QUIZ_DATA: QuizItem[] = [
   {
@@ -138,8 +136,291 @@ export const QUIZ_DATA: QuizItem[] = [
   }
 ];
 
+/**
+ * CÂU HỎI MÔN LỊCH SỬ
+ */
+export const HISTORY_QUIZ: QuizItem[] = [
+  {
+    id: 101,
+    question: "Tuyến đường chiến lược Trường Sơn (Đường Hồ Chí Minh) chính thức được mở vào ngày tháng năm nào?",
+    options: [
+      "A. Ngày 19/05/1959",
+      "B. Ngày 22/12/1944",
+      "C. Ngày 02/09/1945",
+      "D. Ngày 30/04/1975"
+    ],
+    correct: 0,
+    explanation: "Bộ Chính trị và Quân ủy Trung ương quyết định thành lập 'Đoàn công tác quân sự đặc biệt' (Đoàn 559) vào ngày 19/5/1959, đúng sinh nhật Chủ tịch Hồ Chí Minh.",
+    category: "Mốc lịch sử"
+  },
+  {
+    id: 102,
+    question: "Đoàn quân sự đầu tiên có nhiệm vụ xẻ núi mở đường Trường Sơn có phiên hiệu là gì?",
+    options: [
+      "A. Đoàn 559",
+      "B. Đoàn 312",
+      "C. Đoàn 308",
+      "D. Đoàn 555"
+    ],
+    correct: 0,
+    explanation: "Đoàn 559 do Thượng tá Võ Bẩm làm Trưởng đoàn được giao nhiệm vụ chi viện cho chiến trường miền Nam.",
+    category: "Lịch sử Quân đội"
+  },
+  {
+    id: 103,
+    question: "Địa danh nào trên đường Trường Sơn được mệnh danh là 'Tọa độ lửa', nơi 10 nữ thanh niên xung phong hy sinh anh dũng?",
+    options: [
+      "A. Ngã ba Đồng Lộc (Hà Tĩnh)",
+      "B. Hang Tám Cô (Quảng Bình)",
+      "C. Thành cổ Quảng Trị",
+      "D. Khe Sanh"
+    ],
+    correct: 0,
+    explanation: "Ngã ba Đồng Lộc là điểm nút giao thông quan trọng bậc nhất, nơi 10 cô gái thanh niên xung phong Tiểu đội 4 đã anh dũng hy sinh năm 1968.",
+    category: "Địa danh lịch sử"
+  },
+  {
+    id: 104,
+    question: "Khẩu hiệu nổi tiếng nào thể hiện quyết tâm sắt đá của các chiến sĩ lái xe Trường Sơn?",
+    options: [
+      "A. Yêu xe như con, quý xăng như máu",
+      "B. Nhất cận thị, nhị cận giang",
+      "C. Tiến nhanh, tiến mạnh, tiến vững chắc",
+      "D. Thà hy sinh chứ không chịu làm nô lệ"
+    ],
+    correct: 0,
+    explanation: "'Yêu xe như con, quý xăng như máu, vượt mọi khó khăn hoàn thành nhiệm vụ' là khẩu hiệu khắc sâu trong tim các chiến sĩ lái xe Đoàn 559.",
+    category: "Khẩu hiệu hành động"
+  },
+  {
+    id: 105,
+    question: "Tập thơ nổi tiếng 'Bài thơ về tiểu đội xe không kính' của Phạm Tiến Duật viết về lực lượng nào?",
+    options: [
+      "A. Những người chiến sĩ lái xe trên đường Trường Sơn",
+      "B. Bộ đội công binh rà phá bom mìn",
+      "C. Lực lượng pháo thủ phòng không",
+      "D. Thanh niên xung phong đào hầm"
+    ],
+    correct: 0,
+    explanation: "Nhà thơ Phạm Tiến Duật từng trực tiếp sống và chiến đấu trên tuyến đường Trường Sơn, sáng tác nên bài thơ bất hủ về hình ảnh những chiếc xe không kính và khí thế hiên ngang của các chiến sĩ.",
+    category: "Văn học Lịch sử"
+  }
+];
+
+/**
+ * CÂU HỎI MÔN ĐỊA LÝ
+ */
+export const GEOGRAPHY_QUIZ: QuizItem[] = [
+  {
+    id: 201,
+    question: "Dãy núi Trường Sơn kéo dài qua hai vùng địa lý lớn nào của nước ta?",
+    options: [
+      "A. Trường Sơn Bắc và Trường Sơn Nam",
+      "B. Hoàng Liên Sơn và Tây Bắc",
+      "C. Đông Bắc và Tây Bắc",
+      "D. Đông Nam Bộ và Tây Nguyên"
+    ],
+    correct: 0,
+    explanation: "Dãy núi Trường Sơn trải dài dọc theo biên giới phía Tây nước ta, chia làm 2 bộ phận chính: Trường Sơn Bắc (từ sông Cả đến đèo Hải Vân) và Trường Sơn Nam (từ đèo Hải Vân đến Nam Bộ).",
+    category: "Địa hình"
+  },
+  {
+    id: 202,
+    question: "Hiện tượng thời tiết đặc trưng gây khô nóng vào mùa hè ở sườn Đông Trường Sơn là gì?",
+    options: [
+      "A. Gió phơn Tây Nam (Gió Lào)",
+      "B. Gió mùa Đông Bắc",
+      "C. Sương mù bao phủ",
+      "D. Mưa rào bão tuyết"
+    ],
+    correct: 0,
+    explanation: "Khi gió mùa Tây Nam vượt qua dãy Trường Sơn, hơi ẩm đọng lại ở sườn Tây (Lào), sang sườn Đông (Việt Nam) trở nên rất khô và nóng, gọi là hiện tượng phơn.",
+    category: "Khí hậu"
+  },
+  {
+    id: 203,
+    question: "Đỉnh núi cao nhất của dải núi Trường Sơn Nam là đỉnh núi nào?",
+    options: [
+      "A. Đỉnh Ngọc Linh (2.598m)",
+      "B. Đỉnh Phan-xi-păng",
+      "C. Đỉnh Tây Con Lĩnh",
+      "D. Đỉnh Ba Vì"
+    ],
+    correct: 0,
+    explanation: "Khối núi Ngọc Linh nằm trên ranh giới tỉnh Kon Tum và Quảng Nam là khối núi cao nhất của dải Trường Sơn Nam (2.598m).",
+    category: "Đỉnh núi"
+  },
+  {
+    id: 204,
+    question: "Loại đất đai phì nhiêu nổi tiếng bao phủ rộng lớn ở vùng cao nguyên Trường Sơn Nam (Tây Nguyên) là loại đất nào?",
+    options: [
+      "A. Đất đỏ ba-zan (Basalt)",
+      "B. Đất phù sa sông cổ",
+      "C. Đất cát biển",
+      "D. Đất mặn vùng ven biển"
+    ],
+    correct: 0,
+    explanation: "Đất đỏ bazan màu mỡ trên các cao nguyên rộng lớn ở Tây Nguyên rất thích hợp phát triển cây công nghiệp dài ngày như cà phê, hồ tiêu, cao su, trà.",
+    category: "Thổ nhưỡng"
+  }
+];
+
+/**
+ * CÂU HỎI MÔN TIẾNG ANH
+ */
+export const ENGLISH_QUIZ: QuizItem[] = [
+  {
+    id: 301,
+    question: "Choose the correct English word for 'Chiếc gậy hành quân / walking stick':",
+    options: [
+      "A. Walking stick / Cane",
+      "B. Wooden sword",
+      "C. Iron shield",
+      "D. Bamboo ladder"
+    ],
+    correct: 0,
+    explanation: "'Walking stick' or 'cane' refers to a stick used to assist in walking, especially during long treks or hiking.",
+    category: "Vocabulary"
+  },
+  {
+    id: 302,
+    question: "Fill in the blank: 'The soldiers marched ________ the Truong Son Mountain Range during the war.'",
+    options: [
+      "A. across",
+      "B. under",
+      "C. inside",
+      "D. behind"
+    ],
+    correct: 0,
+    explanation: "'March across' means to walk in a military formation across a region or geographical obstacle.",
+    category: "Grammar"
+  },
+  {
+    id: 303,
+    question: "What is the synonym of 'BRAVE' in English?",
+    options: [
+      "A. Courageous / Heroic",
+      "B. Fearful",
+      "C. Hesitant",
+      "D. Weak"
+    ],
+    correct: 0,
+    explanation: "'Courageous' and 'heroic' are close synonyms of 'brave' (dũng cảm, anh hùng).",
+    category: "Synonym"
+  },
+  {
+    id: 304,
+    question: "Identify the correct passive sentence: 'Musician Pham Tuyen composed the song Truong Son Stick in 1967.'",
+    options: [
+      "A. The song Truong Son Stick was composed by musician Pham Tuyen in 1967.",
+      "B. The song Truong Son Stick is composed by musician Pham Tuyen.",
+      "C. Musician Pham Tuyen was composed by the song in 1967.",
+      "D. The song Truong Son Stick had composed Pham Tuyen in 1967."
+    ],
+    correct: 0,
+    explanation: "Past simple passive formula: Object + was/were + V3/ed + by Subject.",
+    category: "Passive Voice"
+  }
+];
+
+/**
+ * CÂU HỎI MÔN TOÁN HỌC & LOGIC
+ */
+export const MATH_QUIZ: QuizItem[] = [
+  {
+    id: 401,
+    question: "Một đoàn bộ đội hành quân qua dãy núi dài 120 km. Mỗi ngày đoàn đi được 20 km. Hỏi đoàn mất bao nhiêu ngày để hoàn thành?",
+    options: [
+      "A. 6 ngày",
+      "B. 5 ngày",
+      "C. 7 ngày",
+      "D. 8 ngày"
+    ],
+    correct: 0,
+    explanation: "Thời gian = Quãng đường / Vận tốc = 120 / 20 = 6 ngày.",
+    category: "Toán Thực Tế"
+  },
+  {
+    id: 402,
+    question: "Tính nhanh tổng chuỗi số sau: S = 1 + 2 + 3 + ... + 10",
+    options: [
+      "A. 55",
+      "B. 50",
+      "C. 60",
+      "D. 45"
+    ],
+    correct: 0,
+    explanation: "Công thức tính tổng dãy số cách đều: (Số đầu + Số cuối) × Số số hạng / 2 = (1 + 10) × 10 / 2 = 55.",
+    category: "Toán Logic"
+  },
+  {
+    id: 403,
+    question: "Nếu 3 chiếc gậy tre có thể làm xong trong 6 giờ, hỏi 6 chiếc gậy tre làm với năng suất tương tự mất bao nhiêu giờ?",
+    options: [
+      "A. 12 giờ",
+      "B. 6 giờ",
+      "C. 3 giờ",
+      "D. 9 giờ"
+    ],
+    correct: 0,
+    explanation: "Số gậy tăng gấp 2 lần (6/3 = 2), thời gian làm tăng tương ứng 2 lần = 6 × 2 = 12 giờ.",
+    category: "Tỉ Lệ Thuận"
+  }
+];
+
+/**
+ * DANH SÁCH MÔN HỌC & CHỦ ĐỀ MẶC ĐỊNH
+ */
+export const DEFAULT_SUBJECTS: SubjectTopic[] = [
+  {
+    id: 'ngu-van-chiec-gay-truong-son',
+    name: 'Chiếc Gậy Trường Sơn',
+    subjectCategory: 'Ngữ Văn',
+    iconEmoji: '🪖',
+    badgeText: 'Lớp 11 - Văn Học',
+    description: 'Tác phẩm, bối cảnh lịch sử, ý nghĩa nghệ thuật và giá trị biểu tượng của ca khúc Chiếc gậy Trường Sơn.',
+    questions: QUIZ_DATA,
+  },
+  {
+    id: 'lich-su-duong-truong-son',
+    name: 'Đường Trường Sơn Huyền Thoại',
+    subjectCategory: 'Lịch Sử',
+    iconEmoji: '📜',
+    badgeText: 'Lịch Sử THPT',
+    description: 'Tìm hiểu lịch sử mở đường Hồ Chí Minh (1959-1975), mốc sự kiện 559 và các anh hùng lực lượng vũ trang.',
+    questions: HISTORY_QUIZ,
+  },
+  {
+    id: 'dia-ly-truong-son-viet-nam',
+    name: 'Địa Lý Dãy Trường Sơn & VN',
+    subjectCategory: 'Địa Lý',
+    iconEmoji: '🗺️',
+    badgeText: 'Địa Lý Việt Nam',
+    description: 'Đặc điểm địa hình Trường Sơn Bắc - Nam, khí hậu gió phơn Tây Nam và thổ nhưỡng Tây Nguyên.',
+    questions: GEOGRAPHY_QUIZ,
+  },
+  {
+    id: 'tieng-anh-thpt-quiz',
+    name: 'English Grammar & Vocabulary',
+    subjectCategory: 'Tiếng Anh',
+    iconEmoji: '🇬🇧',
+    badgeText: 'B1 / B2 Level',
+    description: 'Luyện tập từ vựng chủ đề lịch sử, ngữ pháp câu bị động, trạng từ và giới từ chỉ chuyển động.',
+    questions: ENGLISH_QUIZ,
+  },
+  {
+    id: 'toan-hoc-tu-duy-logic',
+    name: 'Tư Duy Toán Học & Logic',
+    subjectCategory: 'Toán Học',
+    iconEmoji: '🧮',
+    badgeText: 'Toán & Logic',
+    description: 'Bài tập tính nhanh, bài toán thực tế hành quân và giải quyết vấn đề bằng tư duy toán học.',
+    questions: MATH_QUIZ,
+  },
+];
+
 export const RANK_TITLES = [
-  { minAccuracy: 0, title: "Tân Binh Trường Sơn 🎒", stars: 1, message: "Cố gắng lên! Hãy ôn tập kĩ lại các kiến thức bài học để vượt qua đèo dốc Trường Sơn nhé!" },
-  { minAccuracy: 60, title: "Chiến Sĩ Quật Cường 🪖", stars: 2, message: "Rất tốt! Bạn đã nắm chắc kiến thức cơ bản và hành quân kiên cường qua tuyến đường gian nguy!" },
-  { minAccuracy: 90, title: "Anh Hùng Dãy Trường Sơn 🎖️", stars: 3, message: "Xuất sắc tuyệt vời! Bạn sở hữu hiểu biết sâu sắc, tinh thần vượt khó và là tấm gương Anh hùng Trường Sơn!" }
+  { minAccuracy: 0, title: "Tân Binh Học Tập 🎒", stars: 1, message: "Cố gắng lên! Hãy ôn tập kĩ lại các kiến thức bài học để đạt điểm số cao hơn nhé!" },
+  { minAccuracy: 60, title: "Học Viên Quật Cường 🪖", stars: 2, message: "Rất tốt! Bạn đã nắm chắc kiến thức cơ bản và hoàn thành bài kiểm tra thành công!" },
+  { minAccuracy: 90, title: "Trạng Nguyên Xuất Sắc 🎖️", stars: 3, message: "Xuất sắc tuyệt vời! Bạn sở hữu hiểu biết sâu sắc và tinh thần học tập vượt trội!" }
 ];
